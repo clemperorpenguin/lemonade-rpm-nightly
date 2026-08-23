@@ -10,9 +10,25 @@ branch instead of tagged releases. The source is integrated via a git submodule 
 branch once a day.
 
 > **These are snapshot builds of unreleased code.** They are versioned
-> `<upstream-version>-0.<date>git<sha>`, which deliberately sorts *below* the corresponding stable
-> release. If you enable both this repo and [abn/lemonade](https://copr.fedorainfracloud.org/coprs/abn/lemonade/),
-> the stable package wins. Pick one.
+> `<upstream-version>-0.<date>git<sha>`, where `<upstream-version>` is whatever the branch's
+> `CMakeLists.txt` declares. That deliberately sorts *below* a real release of the same version, and
+> nightlies sort correctly among themselves by date.
+>
+> Note that `GUI3_merging` is a long-lived feature branch: it currently declares **11.6.0** while
+> upstream has already released **11.7.0** on `main` (the branch is a few hundred commits ahead of its
+> fork point but several dozen behind main, and contains neither the `v11.6.0` nor the `v11.7.0` tag).
+> So a nightly sorts below stable 11.7.0 and `dnf upgrade` will not move you onto it. This corrects
+> itself as soon as the branch merges `main` and inherits the newer version.
+>
+> Practically: enable **either** this repo **or**
+> [abn/lemonade](https://copr.fedorainfracloud.org/coprs/abn/lemonade/), not both. To switch from
+> stable to a nightly, install it explicitly:
+>
+> ```bash
+> sudo dnf copr disable abn/lemonade
+> sudo dnf copr enable clemperorpenguin/lemonade
+> sudo dnf distro-sync --refresh 'lemonade*'
+> ```
 
 ## Installation
 
