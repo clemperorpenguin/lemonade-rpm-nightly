@@ -1,6 +1,6 @@
 Name:           lemonade
 Version:        11.6.0
-Release:        1%{?dist}
+Release:        0.20260823gitb22f76693%{?dist}
 Summary:        Lightweight, high-performance local LLM server
 License:        Apache-2.0
 URL:            https://lemonade-server.ai/
@@ -398,6 +398,13 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/applications/lemonade-web.desktop
 
 %changelog
+* Sun Aug 23 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.6.0-0.20260823gitb22f76693
+- nightly: GUI3_merging @ b22f76693 (nightly@users.noreply.github.com)
+- README: explain why nightlies are versioned below stable
+  (clem@pendragon.systems)
+- Track GUI3_merging nightly instead of tagged releases
+  (clem@pendragon.systems)
+
 * Sat Aug 15 2026 Arun Babu Neelicattu <arun.neelicattu@gmail.com> 11.6.0-1
 - Bump version to 11.6.0 and update submodule (arun.neelicattu@gmail.com)
 - Revert "spec: add explicit libgomp dependency for llama-server runtime
