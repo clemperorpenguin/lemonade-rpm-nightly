@@ -1,0 +1,54 @@
+name: nightly
+
+# Rolls the lemonade submodule to the tip of the tracked upstream branch and
+# tags a snapshot release. The pushed tag fires the COPR webhook, which rebuilds
+# clemperorpenguin/lemonade from this repo via tito.
+
+on:
+  schedule:
+    # 04:17 UTC daily -- off the hour to avoid GitHub's cron congestion.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Tag even if the upstream branch has not moved'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.fedoraproject.org/fedora:44
+
+    steps:
+      - name: Install release tooling
+        run: >
+          dnf -y install --setopt=install_weak_deps=False
+          git tito rpm-build rpmdevtools
+
+      - uses: actions/checkout@v4
+        with:
+          # tito derives the %changelog from commits since the previous tag.
+          fetch-depth: 0
+          submodules: true
+
+      - name: Trust the checkout
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/lemonade"
+          git config --global user.name 'lemonade-rpm nightly'
+          git config --global user.email 'nightly@users.noreply.github.com'
+
+      - name: Roll snapshot and tag
+        env:
+          PUSH: '1'
+          FORCE: ${{ inputs.force && '1' || '0' }}
+        run: ./scripts/nightly.sh

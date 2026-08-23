@@ -1,14 +1,22 @@
-# lemonade-rpm
+# lemonade-rpm-nightly
 
-[![Copr Build Status](https://copr.fedorainfracloud.org/coprs/abn/lemonade/package/lemonade/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/abn/lemonade/)
+[![Copr Build Status](https://copr.fedorainfracloud.org/coprs/clemperorpenguin/lemonade/package/lemonade/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/clemperorpenguin/lemonade/)
 
-Fedora RPM packages for [Lemonade](https://github.com/lemonade-sdk/lemonade), a lightweight, high-performance local LLM server.
+Nightly Fedora RPM packages for [Lemonade](https://github.com/lemonade-sdk/lemonade), a lightweight, high-performance local LLM server.
 
-The source is integrated via git submodules from [lemonade-sdk/lemonade](https://github.com/lemonade-sdk/lemonade).
+This is a fork of the upstream `lemonade-rpm` packaging that tracks the **`GUI3_merging`** development
+branch instead of tagged releases. The source is integrated via a git submodule from
+[lemonade-sdk/lemonade](https://github.com/lemonade-sdk/lemonade), rolled forward to the tip of that
+branch once a day.
+
+> **These are snapshot builds of unreleased code.** They are versioned
+> `<upstream-version>-0.<date>git<sha>`, which deliberately sorts *below* the corresponding stable
+> release. If you enable both this repo and [abn/lemonade](https://copr.fedorainfracloud.org/coprs/abn/lemonade/),
+> the stable package wins. Pick one.
 
 ## Installation
 
-This package is available via the [abn/lemonade](https://copr.fedorainfracloud.org/coprs/abn/lemonade/) Copr repository.
+This package is available via the [clemperorpenguin/lemonade](https://copr.fedorainfracloud.org/coprs/clemperorpenguin/lemonade/) Copr repository.
 
 ### Quick Start (Full Installation)
 
@@ -16,7 +24,7 @@ To install both the server and the desktop application:
 
 ```bash
 # Enable the Copr repository
-sudo dnf copr enable abn/lemonade
+sudo dnf copr enable clemperorpenguin/lemonade
 
 # Install everything
 sudo dnf install lemonade
@@ -195,35 +203,103 @@ If you are upgrading from `lemonade <= 10.9.0-1` (or migrating from the upstream
 
 ## Development
 
-This project uses [tito](https://github.com/rpm-software-management/tito) for versioning and release management.
+This fork exists to publish **nightly snapshots** of the upstream `GUI3_merging` branch. It uses
+[tito](https://github.com/rpm-software-management/tito) for versioning and release management, the
+same as its parent repo — the only difference is that the submodule tracks a branch and the release
+string encodes a snapshot instead of being hand-bumped.
+
+### How a nightly happens
+
+1. `.github/workflows/nightly.yml` runs at 04:17 UTC (and on demand via **Actions → nightly → Run workflow**).
+2. It calls [`scripts/nightly.sh`](scripts/nightly.sh), which:
+   - rolls the `lemonade` submodule to the tip of `GUI3_merging` (`git submodule update --remote`);
+   - exits quietly if the branch has not moved since the last snapshot;
+   - reads `Version:` from upstream's `project(lemon_cpp VERSION …)` and syncs it into the spec;
+   - verifies every patch in `patches/` still applies, failing loudly if the branch drifted out from under one;
+   - builds a test SRPM as a pre-flight check;
+   - runs `tito tag --use-release '0.<date>git<sha>%{?dist}' --accept-auto-changelog`;
+   - pushes the commit and the tag to `main`.
+3. Pushing the tag fires the COPR webhook, which rebuilds `clemperorpenguin/lemonade` from this repo.
+
+Failures show up in two places: patch/spec problems fail the GitHub Actions run, and compile problems
+fail the COPR build. Check both if a night goes missing.
+
+### Running the nightly by hand
+
+```bash
+# Dry run: update, tag locally, but do not push
+./scripts/nightly.sh
+
+# What CI does
+PUSH=1 ./scripts/nightly.sh
+
+# Re-cut a tag even though upstream has not moved (e.g. after a spec fix)
+FORCE=1 PUSH=1 ./scripts/nightly.sh
+
+# Track a different upstream branch for one run
+BRANCH=main ./scripts/nightly.sh
+```
+
+The script uses `tito` from `$PATH` when present; otherwise it runs tito inside a throwaway Fedora
+container (`podman` or `docker`, overridable with `TITO_IMAGE`). On an image-mode host such as
+secureblue, `/etc/containers/policy.json` may reject unsigned registries — either add a user policy
+at `~/.config/containers/policy.json` or just let the GitHub Actions workflow do the work.
+
+### Changing the tracked branch
+
+The branch lives in `.gitmodules`; everything else reads it from there.
+
+```bash
+git config -f .gitmodules submodule.lemonade.branch some-other-branch
+git submodule sync lemonade
+git commit -am "track some-other-branch"
+```
 
 ### Building RPMs locally
 
-You can perform a test build of the RPMs either directly on your host (if all dependencies are installed) or inside a container.
+Always commit first — tito only builds committed files.
 
-**Option A: Container Build (Recommended)**
-Always commit your changes to Git first (Tito only builds committed files), then run:
 ```bash
 # 1. Start the rpmbuilder container in the background
 podman run -d --rm -i --name rpmbuilder-lemonade -v ${PWD}:/sources:z quay.io/abn/rpmbuilder:fedora-44 sleep inf
 
 # 2. Trigger the build inside the container
 podman exec rpmbuilder-lemonade rpmbuilder
-```
-The built RPM packages will be located in `/output` inside the container.
 
-**Option B: Host Build**
+# 3. Clean up
+podman stop rpmbuilder-lemonade
+```
+
+The built RPM packages end up in `/output` inside the container. A host build (`tito build --rpm --test`)
+works too if every `BuildRequires:` is already installed.
+
+### COPR project configuration
+
+The COPR project `clemperorpenguin/lemonade` needs one package wired to this repo:
+
+| Setting | Value |
+|---|---|
+| Package name | `lemonade` |
+| Source type | `Custom SCM` |
+| Clone url | `https://github.com/clemperorpenguin/lemonade-rpm-nightly.git` |
+| Committish | *(empty — the webhook supplies it)* |
+| Subdirectory | *(empty)* |
+| Spec file | `lemonade.spec` |
+| Type of source | `tito` |
+| Auto-rebuild | enabled |
+
+Then copy the webhook URL from **COPR → project → Settings → Integrations** into
+**GitHub → repo → Settings → Webhooks** with content type `application/json` and "Just the push event"
+(tag pushes are push events).
+
+To kick off a build without waiting for the webhook:
+
 ```bash
-# Tito only builds committed changes
-tito build --rpm --test
+copr-cli build-package --name lemonade clemperorpenguin/lemonade
 ```
-### Releasing to COPR
 
-To tag a new version and release to COPR:
-```bash
-# Tag a new release (updates spec and creates git tag)
-tito tag
+### Upgrading to a specific upstream release
 
-# Release to COPR (as configured in .tito/releasers.conf)
-tito release copr
-```
+If you ever need to pin a tagged release rather than a branch snapshot, the
+[`bump-lemonade-version`](.agents/skills/bump-lemonade-version/SKILL.md) skill still describes that
+workflow.
