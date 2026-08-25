@@ -1,6 +1,6 @@
 Name:           lemonade
 Version:        11.6.0
-Release:        0.20260823gitb22f76693%{?dist}
+Release:        0.20260825git96a8bd5cd%{?dist}
 Summary:        Lightweight, high-performance local LLM server
 License:        Apache-2.0
 URL:            https://lemonade-server.ai/
@@ -398,6 +398,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/applications/lemonade-web.desktop
 
 %changelog
+* Tue Aug 25 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.6.0-0.20260825git96a8bd5cd
+- nightly: GUI3_merging @ 96a8bd5cd (nightly@users.noreply.github.com)
+
 * Sun Aug 23 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.6.0-0.20260823gitb22f76693
 - nightly: GUI3_merging @ b22f76693 (nightly@users.noreply.github.com)
 - README: explain why nightlies are versioned below stable
