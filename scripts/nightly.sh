@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
 #
 # Roll the vendored lemonade submodule forward to the tip of the tracked upstream
-# branch and cut a snapshot release with tito.
+# branch, merge the newest upstream release into it, and cut a snapshot release
+# with tito.
 #
-# Version is taken from upstream's CMakeLists.txt; Release is stamped as
-# 0.<utc-date>git<sha>%{?dist} so every nightly sorts below the eventual real
-# release of the same version. Pushing the resulting tag is what triggers the
-# COPR rebuild -- see README.md.
+# The package ships both halves of upstream: the newest release's version and
+# the front-end work that only exists on the feature branch. The submodule stays
+# pinned to upstream's own branch tip and scripts/merge-release.sh carries the
+# release forward as a patch -- see the comment at the top of that script.
+#
+# Version is therefore taken from the *merged* tree, not from the submodule's
+# CMakeLists.txt. Release is stamped as 0.<utc-date>git<sha>%{?dist}, which still
+# sorts nightlies correctly among themselves. Pushing the resulting tag is what
+# triggers the COPR rebuild -- see README.md.
 #
 # Environment:
-#   FORCE=1        cut a tag even when the upstream branch has not moved
+#   FORCE=1        cut a tag even when nothing upstream has moved
 #   PUSH=1         push the commits and the new tag to origin
 #   BRANCH=<name>  override the tracked branch (default: submodule.lemonade.branch)
+#   RELEASE_TAG=.. override the upstream release merged in (default: newest v*)
 #   TITO_IMAGE=..  container image used when tito is not installed on the host
 #
 set -euo pipefail
@@ -79,19 +86,28 @@ git submodule update --init --remote lemonade
 NEW_SHA=$(git -C lemonade rev-parse HEAD)
 SHORT_SHA=$(git -C lemonade rev-parse --short=9 HEAD)
 
-if [ "$OLD_SHA" = "$NEW_SHA" ] && [ "$FORCE" != "1" ]; then
-    log "$BRANCH is unchanged at $SHORT_SHA; nothing to build"
-    exit 0
+if [ "$OLD_SHA" = "$NEW_SHA" ]; then
+    log "$BRANCH is unchanged at $SHORT_SHA; checking for a new upstream release"
 fi
 
-VERSION=$(sed -n 's/^project(lemon_cpp VERSION \([0-9][0-9.]*\)).*/\1/p' lemonade/CMakeLists.txt)
-[ -n "$VERSION" ] || die "could not read the project version from lemonade/CMakeLists.txt"
+# Regenerate the release catch-up patch. This runs even when the branch has not
+# moved, because a freshly tagged upstream release changes the package on its own.
+# Sets VERSION, TAG and BASE; fails loudly on a conflict it has no resolution for.
+# Captured into a variable first: `eval "$(cmd)"` reports eval's status, not the
+# command's, so a failed merge would otherwise sail past set -e.
+MERGE_OUT=$(./scripts/merge-release.sh) || die "merge-release.sh failed; see the log above"
+eval "$MERGE_OUT"
+[ -n "${VERSION:-}" ] || die "merge-release.sh did not report a version"
+log "merged $TAG into $BRANCH@$SHORT_SHA -> version $VERSION"
 
-# A moving branch drifts out from under the patches; fail loudly rather than
-# shipping a package that silently lost a downstream fix.
+# The catch-up patch was just generated against this exact tree, so this mostly
+# guards any hand-written patch added alongside it: a moving branch drifts out
+# from under those, and shipping a package that silently lost a downstream fix is
+# worse than a failed nightly. --binary because the catch-up patch carries a test
+# fixture the release added.
 log "checking that the patches still apply to $BRANCH@$SHORT_SHA"
 for patch in patches/*.patch; do
-    git -C lemonade apply --check "../$patch" \
+    git -C lemonade apply --check --binary "../$patch" \
         || die "$patch no longer applies to $BRANCH@$SHORT_SHA; refresh it before retrying"
 done
 
@@ -101,13 +117,13 @@ if [ "$SPEC_VERSION" != "$VERSION" ]; then
     sed -i "s/^Version:.*/Version:        $VERSION/" lemonade.spec
 fi
 
-git add lemonade lemonade.spec
+git add lemonade lemonade.spec patches merge
 if git diff --cached --quiet; then
     [ "$FORCE" = "1" ] || { log "no packaging changes; nothing to do"; exit 0; }
     log "no packaging changes; cutting a rebuild tag anyway (FORCE=1)"
 else
     git commit -q \
-        -m "nightly: $BRANCH @ $SHORT_SHA" \
+        -m "nightly: $BRANCH @ $SHORT_SHA on $TAG" \
         -m "https://github.com/lemonade-sdk/lemonade/commit/$NEW_SHA"
 fi
 
@@ -135,6 +151,7 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
         echo "|---|---|"
         echo "| Tag | \`$TAG\` |"
         echo "| Upstream | [\`$SHORT_SHA\`](https://github.com/lemonade-sdk/lemonade/commit/$NEW_SHA) on \`$BRANCH\` |"
+        echo "| Release merged in | \`$TAG\` |"
         echo "| Version | \`$VERSION-$RELEASE\` |"
     } >> "$GITHUB_STEP_SUMMARY"
 fi
