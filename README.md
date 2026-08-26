@@ -109,8 +109,16 @@ systemctl --user disable --now lemond.service
 
 Lemonade can be configured by setting environment variables in configuration drop-in files: 
 
-* **System-wide service**: Read from `/etc/lemonade/conf.d/*.conf` (loaded in alphabetical order).
-* **Per-user service**: Read from `~/.config/lemonade/conf.d/*.conf`.
+* **System-wide service**: Read from `/etc/default/lemond`.
+* **Per-user service**: Read from `~/.config/lemonade/lemond.conf`.
+
+> **Changed in 11.8.** These used to be drop-in directories (`/etc/lemonade/conf.d/*.conf` and
+> `~/.config/lemonade/conf.d/*.conf`), each loaded in alphabetical order. Upstream replaced them with
+> a single environment file per scope. On upgrade the package copies any settings you had in
+> `/etc/lemonade/conf.d/*.conf` into `/etc/default/lemond`, skipping keys already set there; your
+> original files are left as `.rpmsave`. **The per-user service is not migrated** — if you had
+> `~/.config/lemonade/conf.d/*.conf`, move those settings into `~/.config/lemonade/lemond.conf`
+> yourself.
 
 #### Common Options
 You can configure the server by adding options to a custom file (e.g., `50-custom.conf`):
@@ -129,7 +137,7 @@ To configure the system-wide service to use a custom port and require an API key
 
 1. Create a custom configuration file:
    ```bash
-   sudo nano /etc/lemonade/conf.d/50-custom.conf
+   sudo nano /etc/default/lemond
    ```
 2. Add your settings:
    ```ini
@@ -141,7 +149,7 @@ To configure the system-wide service to use a custom port and require an API key
    sudo systemctl restart lemond.service
    ```
 
-*(Note: For the per-user service, create `~/.config/lemonade/conf.d/50-custom.conf` and run `systemctl --user restart lemond.service` instead).*
+*(Note: For the per-user service, edit `~/.config/lemonade/lemond.conf` and run `systemctl --user restart lemond.service` instead).*
 
 
 ### Command-Line Interface (CLI)
@@ -174,7 +182,7 @@ The `lemonade-web` package installs a `lemonade-web` launcher and a desktop entr
 
 The `lemonade-desktop` package installs the `lemonade-app` Tauri desktop application, available from your application menu as "Lemonade Desktop". It connects to a running `lemond` instance.
 
-System-wide configuration files are located in `/etc/lemonade/conf.d/`. For the user service, per-user overrides go in `~/.config/lemonade/conf.d/`.
+System-wide configuration lives in `/etc/default/lemond`. For the user service, per-user overrides go in `~/.config/lemonade/lemond.conf`.
 
 ## Upstream Differences & Migrations
 
@@ -202,7 +210,7 @@ If you are upgrading from `lemonade <= 10.9.0-1` (or migrating from the upstream
 * **Migration**: The package post-install script automatically detects if the `lemonade` user is configured with the non-standard `/opt/var/lib/lemonade` path, stops the system service if active, updates the home directory to `/var/lib/lemonade`, and moves all existing files safely (`usermod -d -m`).
 
 #### 2. Flattened Cache Directory (Un-nesting state files)
-* **What changed**: The system service now runs with default environment variables (`LEMONADE_CACHE_DIR=/var/lib/lemonade` and `HF_HOME=/var/lib/lemonade/huggingface`) defined in `/etc/lemonade/conf.d/10-paths.conf`.
+* **What changed**: The system service now runs with default environment variables (`LEMONADE_CACHE_DIR=/var/lib/lemonade` and `HF_HOME=/var/lib/lemonade/huggingface`). These lived in `/etc/lemonade/conf.d/10-paths.conf` until 11.8 and are appended to `/etc/default/lemond` from then on.
 * **Migration**: Previously, config, binaries, and downloaded models were nested inside hidden directories:
   * `/var/lib/lemonade/.cache/lemonade/` (Config/Binaries)
   * `/var/lib/lemonade/.cache/huggingface/` (HuggingFace Models)

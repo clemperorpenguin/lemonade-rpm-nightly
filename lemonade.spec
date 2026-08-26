@@ -269,9 +269,14 @@ EOF
 install -dm 0750 %{buildroot}%{_sharedstatedir}/lemonade
 
 # --- Default paths environment ---
-# System service defaults: use flat directories directly under state directory.
-install -Dpm 0644 /dev/stdin \
-    %{buildroot}%{_sysconfdir}/lemonade/conf.d/10-paths.conf << 'EOF'
+# 11.8 dropped the /etc/lemonade/conf.d drop-in mechanism: the unit now reads a
+# single EnvironmentFile=-/etc/default/lemond, which upstream installs from
+# data/secrets.conf. Append the Fedora path defaults there so the system service
+# keeps its flat state-directory layout instead of falling back to the built-in
+# defaults. %post migrates anything a user had under conf.d.
+cat >> %{buildroot}%{_sysconfdir}/default/lemond << 'EOF'
+
+# Fedora packaging defaults: flat directories under the service state directory.
 LEMONADE_CACHE_DIR=%{_sharedstatedir}/lemonade
 HF_HOME=%{_sharedstatedir}/lemonade/huggingface
 EOF
@@ -332,7 +337,40 @@ chmod 0750 %{_sharedstatedir}/lemonade
 find %{_sharedstatedir}/lemonade -type d -exec chmod 0750 {} + 2>/dev/null || true
 find %{_sharedstatedir}/lemonade -type f -exec chmod 0640 {} + 2>/dev/null || true
 
-# 3. Add lemonade user to render and video groups for hardware acceleration
+# 3. Migrate /etc/lemonade/conf.d/*.conf into /etc/default/lemond
+# 11.8 stopped reading the conf.d drop-ins, so anything a user set there would
+# silently stop applying. Carry their settings forward on upgrade. The old files
+# still exist at this point: rpm erases config files dropped from the package
+# only after %%post runs, keeping locally modified ones as .rpmsave.
+if [ $1 -gt 1 ] && [ -d %{_sysconfdir}/lemonade/conf.d ]; then
+    MIGRATED=""
+    # Alphabetical, matching the load order the drop-ins used to have.
+    for f in $(ls %{_sysconfdir}/lemonade/conf.d/*.conf 2>/dev/null | sort); do
+        case "${f##*/}" in
+            # 10-paths.conf and zz-secrets.conf are ours and upstream's templates;
+            # their content is already in /etc/default/lemond.
+            10-paths.conf|zz-secrets.conf) continue ;;
+        esac
+        while IFS= read -r line; do
+            case "$line" in
+                ''|'#'*) continue ;;
+            esac
+            key=${line%%%%=*}
+            # An assignment already present in /etc/default/lemond wins: it is
+            # either the admin's own edit or a default we just wrote.
+            if ! grep -q "^[[:space:]]*${key}=" %{_sysconfdir}/default/lemond 2>/dev/null; then
+                if [ -z "$MIGRATED" ]; then
+                    printf '\n# Migrated from %{_sysconfdir}/lemonade/conf.d on upgrade to 11.8.\n' \
+                        >> %{_sysconfdir}/default/lemond
+                    MIGRATED=1
+                fi
+                printf '%%s\n' "$line" >> %{_sysconfdir}/default/lemond
+            fi
+        done < "$f"
+    done
+fi
+
+# 4. Add lemonade user to render and video groups for hardware acceleration
 if getent group render >/dev/null; then
     usermod -a -G render lemonade || true
 fi
@@ -373,10 +411,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/lemonade/
 %{_datadir}/lemonade-server/
 %{_datadir}/icons/hicolor/scalable/apps/ai.lemonadeserver.Lemonade.svg
-%dir %{_sysconfdir}/lemonade
-%dir %{_sysconfdir}/lemonade/conf.d
-%config(noreplace) %{_sysconfdir}/lemonade/conf.d/10-paths.conf
-%config(noreplace) %{_sysconfdir}/lemonade/conf.d/zz-secrets.conf
+%config(noreplace) %{_sysconfdir}/default/lemond
 %{_unitdir}/lemond.service
 %{_userunitdir}/lemond.service
 %{_sysusersdir}/lemonade.conf
