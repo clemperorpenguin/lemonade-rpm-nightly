@@ -1,6 +1,6 @@
 Name:           lemonade
 Version:        11.8.0
-Release:        0.20260825git96a8bd5cd%{?dist}
+Release:        0.20260826git96a8bd5cd%{?dist}
 Summary:        Lightweight, high-performance local LLM server
 License:        Apache-2.0
 URL:            https://lemonade-server.ai/
@@ -410,6 +410,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/applications/lemonade-web.desktop
 
 %changelog
+* Wed Aug 26 2026 clemperorpenguin <clem@pendragon.systems> 11.8.0-0.20260826git96a8bd5cd
+- update to 11.8 backend with GUI3 (clem@pendragon.systems)
+
 * Tue Aug 25 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.6.0-0.20260825git96a8bd5cd
 - nightly: GUI3_merging @ 96a8bd5cd (nightly@users.noreply.github.com)
 
