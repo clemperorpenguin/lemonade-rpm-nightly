@@ -1,6 +1,6 @@
 Name:           lemonade
 Version:        11.8.0
-Release:        0.20260826git96a8bd5cd%{?dist}
+Release:        0.20260826.1git96a8bd5cd%{?dist}
 Summary:        Lightweight, high-performance local LLM server
 License:        Apache-2.0
 URL:            https://lemonade-server.ai/
@@ -410,6 +410,11 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/applications/lemonade-web.desktop
 
 %changelog
+* Wed Aug 26 2026 clemperorpenguin <clem@pendragon.systems> 11.8.0-0.20260826.1git96a8bd5cd
+- nightly: allow a same-day re-cut after a failed build
+  (clem@pendragon.systems)
+- fix: correct the server.cpp merge resolution (clem@pendragon.systems)
+
 * Wed Aug 26 2026 clemperorpenguin <clem@pendragon.systems>
 - fix: correct the server.cpp merge resolution (clem@pendragon.systems)
 
