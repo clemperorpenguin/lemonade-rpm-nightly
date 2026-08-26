@@ -410,6 +410,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/applications/lemonade-web.desktop
 
 %changelog
+* Wed Aug 26 2026 clemperorpenguin <clem@pendragon.systems>
+- fix: correct the server.cpp merge resolution (clem@pendragon.systems)
+
 * Wed Aug 26 2026 clemperorpenguin <clem@pendragon.systems> 11.8.0-0.20260826git96a8bd5cd
 - update to 11.8 backend with GUI3 (clem@pendragon.systems)
 

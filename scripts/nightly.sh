@@ -136,7 +136,21 @@ if [ "${CHECK_SRPM:-1}" = "1" ]; then
         || die "test SRPM build failed; not tagging"
 fi
 
-RELEASE="0.$(date -u +%Y%m%d)git${SHORT_SHA}%{?dist}"
+# The tag name is derived from the release string, which is just date + branch
+# sha -- so re-cutting on the same day (FORCE=1 after a failed build, upstream
+# not having moved) would collide with the tag already pushed. Append a serial
+# in that case. rpm ranks a numeric segment above an alpha one, so
+# 0.<date>.1git<sha> sorts above 0.<date>git<sha> and the re-cut wins.
+RELEASE_DATE="0.$(date -u +%Y%m%d)"
+SERIAL=""
+N=0
+while git rev-parse -q --verify \
+        "refs/tags/lemonade-$VERSION-${RELEASE_DATE}${SERIAL}git${SHORT_SHA}" >/dev/null; do
+    N=$((N + 1))
+    SERIAL=".$N"
+done
+[ -z "$SERIAL" ] || log "a tag for today at $SHORT_SHA exists; re-cutting as serial $N"
+RELEASE="${RELEASE_DATE}${SERIAL}git${SHORT_SHA}%{?dist}"
 log "tagging $VERSION-$RELEASE"
 run_tito tag --use-release "$RELEASE" --accept-auto-changelog
 
