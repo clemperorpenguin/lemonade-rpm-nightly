@@ -44,8 +44,11 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global --add safe.directory "$GITHUB_WORKSPACE/lemonade"
-          git config --global user.name 'lemonade-rpm nightly'
-          git config --global user.email 'nightly@users.noreply.github.com'
+          # The bot account that actually runs this workflow. Anything else
+          # under @users.noreply.github.com is a real person's login and GitHub
+          # will credit them for every commit we push.
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
       - name: Roll snapshot and tag
         env:

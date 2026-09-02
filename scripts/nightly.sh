@@ -44,8 +44,11 @@ LOCAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 # tito writes the %changelog entry from the git identity, so it must resolve.
 if ! git config user.email >/dev/null 2>&1; then
+    # .invalid is reserved (RFC 2606) so it can never resolve to a real
+    # GitHub account; a bare name@users.noreply.github.com would credit
+    # whoever owns that login. CI overrides this with github-actions[bot].
     git config user.name "lemonade-rpm nightly"
-    git config user.email "nightly@users.noreply.github.com"
+    git config user.email "nightly@lemonade-rpm.invalid"
 fi
 GIT_NAME=$(git config user.name)
 GIT_EMAIL=$(git config user.email)

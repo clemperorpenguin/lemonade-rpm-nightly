@@ -118,7 +118,7 @@ if [ ${#LEFTOVER[@]} -gt 0 ]; then
 fi
 
 git -C "$WORKTREE" -c user.name='lemonade-rpm nightly' \
-    -c user.email='nightly@users.noreply.github.com' \
+    -c user.email='nightly@lemonade-rpm.invalid' \
     commit -q --no-verify -m "catch up to $TAG" >&2
 
 VERSION=$(sed -n 's/^project(lemon_cpp VERSION \([0-9][0-9.]*\)).*/\1/p' "$WORKTREE/CMakeLists.txt")
