@@ -1,6 +1,6 @@
 Name:           lemonade
 Version:        11.9.0
-Release:        0.20260831git1e7ac6bc6%{?dist}
+Release:        0.20260902git1e7ac6bc6%{?dist}
 Summary:        Lightweight, high-performance local LLM server
 License:        Apache-2.0
 URL:            https://lemonade-server.ai/
@@ -445,6 +445,11 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/applications/lemonade-web.desktop
 
 %changelog
+* Wed Sep 02 2026 clemperorpenguin <clem@pendragon.systems> 11.9.0-0.20260902git1e7ac6bc6
+- nightly: GUI3_merging @ 1e7ac6bc6 on v11.9.0 (clem@pendragon.systems)
+- Stop attributing automated commits to an unrelated GitHub user
+  (clem@pendragon.systems)
+
 * Mon Aug 31 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.8.1-0.20260831git1e7ac6bc6
 - nightly: GUI3_merging @ 1e7ac6bc6 on v11.8.1
   (nightly@users.noreply.github.com)
