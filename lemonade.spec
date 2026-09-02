@@ -450,13 +450,13 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 - Stop attributing automated commits to an unrelated GitHub user
   (clem@pendragon.systems)
 
-* Mon Aug 31 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.8.1-0.20260831git1e7ac6bc6
+* Mon Aug 31 2026 github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 11.8.1-0.20260831git1e7ac6bc6
 - nightly: GUI3_merging @ 1e7ac6bc6 on v11.8.1
-  (nightly@users.noreply.github.com)
+  (41898282+github-actions[bot]@users.noreply.github.com)
 
-* Fri Aug 28 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.8.1-0.20260828git96a8bd5cd
+* Fri Aug 28 2026 github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 11.8.1-0.20260828git96a8bd5cd
 - nightly: GUI3_merging @ 96a8bd5cd on v11.8.1
-  (nightly@users.noreply.github.com)
+  (41898282+github-actions[bot]@users.noreply.github.com)
 
 * Thu Aug 27 2026 clemperorpenguin <clem@pendragon.systems> 11.8.0-0.20260826.2git96a8bd5cd
 - spec: follow upstream's move from conf.d to /etc/default/lemond
@@ -473,11 +473,11 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 * Wed Aug 26 2026 clemperorpenguin <clem@pendragon.systems> 11.8.0-0.20260826git96a8bd5cd
 - update to 11.8 backend with GUI3 (clem@pendragon.systems)
 
-* Tue Aug 25 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.6.0-0.20260825git96a8bd5cd
-- nightly: GUI3_merging @ 96a8bd5cd (nightly@users.noreply.github.com)
+* Tue Aug 25 2026 github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 11.6.0-0.20260825git96a8bd5cd
+- nightly: GUI3_merging @ 96a8bd5cd (41898282+github-actions[bot]@users.noreply.github.com)
 
-* Sun Aug 23 2026 lemonade-rpm nightly <nightly@users.noreply.github.com> 11.6.0-0.20260823gitb22f76693
-- nightly: GUI3_merging @ b22f76693 (nightly@users.noreply.github.com)
+* Sun Aug 23 2026 github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 11.6.0-0.20260823gitb22f76693
+- nightly: GUI3_merging @ b22f76693 (41898282+github-actions[bot]@users.noreply.github.com)
 - README: explain why nightlies are versioned below stable
   (clem@pendragon.systems)
 - Track GUI3_merging nightly instead of tagged releases
