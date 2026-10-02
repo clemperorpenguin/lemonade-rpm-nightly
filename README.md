@@ -4,22 +4,21 @@
 
 Nightly Fedora RPM packages for [Lemonade](https://github.com/lemonade-sdk/lemonade), a lightweight, high-performance local LLM server.
 
-This is a fork of the upstream `lemonade-rpm` packaging that builds the **newest upstream release**
-with the **`GUI3_merging`** front-end work on top. Neither upstream branch has both: `GUI3_merging`
-carries the new GUI but lags the released version, while a release tag has the version but not the
-GUI. The source is integrated via a git submodule from
+This is a fork of the upstream `lemonade-rpm` packaging that builds the **`GUI3_squashed`** branch —
+the current GUI3 beta — exactly as upstream has it: no release merged in, no downstream patches. The
+source is integrated via a git submodule from
 [lemonade-sdk/lemonade](https://github.com/lemonade-sdk/lemonade), pinned to the tip of that branch
-and rolled forward once a day; the release is merged back in at package time as a generated patch.
+and rolled forward once a day.
 
 > **These are snapshot builds of unreleased code.** They are versioned
-> `<release-version>-0.<date>git<sha>` — the version of the newest upstream release, with a `Release`
-> encoding the snapshot date and the branch commit. Nightlies sort correctly among themselves by date.
+> `<upstream-version>-0.<date>git<sha>`, where the version is the one upstream's own
+> `tools/version.py` gives the branch tip: the upcoming weekly release, e.g. `2026.41.0`. The full
+> development string (`2026.41.0~<count>.<hash>`) is what the binaries report. Nightlies sort
+> correctly among themselves by date.
 >
-> **A nightly now outranks the matching stable release, so `dnf upgrade` will move you onto it.**
-> That is a change: nightlies used to declare the branch's own lagging version (11.6.0 against a
-> stable 11.7.0) and therefore sorted *below* stable and stayed opt-in. Now that the package carries
-> the release's version, enabling this repo is enough to be upgraded onto snapshot code. If you want
-> stable, do not enable this repo.
+> **A nightly outranks every stable release older than the one it is heading towards, so
+> `dnf upgrade` will move you onto it.** Once that release ships it sorts above the nightly, until
+> the next week's nightlies overtake it again. If you want stable, do not enable this repo.
 >
 > Practically: enable **either** this repo **or**
 > [abn/lemonade](https://copr.fedorainfracloud.org/coprs/abn/lemonade/), not both. To switch from
@@ -228,53 +227,37 @@ If you are upgrading from `lemonade <= 10.9.0-1` (or migrating from the upstream
 
 ## Development
 
-This fork exists to publish **nightly snapshots** that combine the newest upstream release with the
-`GUI3_merging` branch. It uses [tito](https://github.com/rpm-software-management/tito) for versioning
-and release management, the same as its parent repo — the differences are that the submodule tracks a
-branch, the release string encodes a snapshot instead of being hand-bumped, and the release is merged
-into the branch by a generated patch.
+This fork exists to publish **nightly snapshots** of the `GUI3_squashed` branch. It uses
+[tito](https://github.com/rpm-software-management/tito) for versioning and release management, the
+same as its parent repo — the differences are that the submodule tracks a branch and the release
+string encodes a snapshot instead of being hand-bumped.
 
-### Why a patch and not a merge commit
+### Where the version comes from
 
-The package needs a tree that exists nowhere upstream: the branch merged with the release. COPR
-resolves the submodule by cloning it at build time, so any merge commit would have to be fetchable
-from a repository COPR can reach — which would mean maintaining a fork of `lemonade` itself. Instead
-the submodule stays pinned to upstream's own branch tip and the merge ships as `Patch0`.
+Upstream computes its version from git state with `tools/version.py` (a `v<year>.<week>.<n>` tag, or
+a development version for the upcoming weekly release). The tarball tito builds has no `.git`, so the
+nightly computes the version up front and stores it in the spec as `%global upstream_version`; `%prep`
+writes it to the `.version` file that `version.py` reads before anything else. `Version:` is its
+numeric `X.Y.Z` part, because tito tags cannot carry the `~<count>.<hash>` suffix.
 
-The patch runs *from* the branch *to* the release, which is the cheap direction: the branch is a few
-hundred commits ahead of its fork point but only a few dozen behind the release, so "bring the branch
-up to the release" is ~1.4 MB where "apply the branch onto the release" is ~5.9 MB for an identical
-tree.
-
-[`scripts/merge-release.sh`](scripts/merge-release.sh) generates it. Conflicts are handled two ways:
-
-* files the branch **deleted** and the release still edits — the old React renderer — are resolved by
-  taking the deletion;
-* **content** conflicts are replayed from the [git rerere](https://git-scm.com/docs/git-rerere) cache
-  committed at `merge/rr-cache`, recorded by hand the first time each one appeared.
-
-Anything else is a hard failure. The script prints the exact commands to resolve a new conflict once
-and record it; until someone does, the nightly stops rather than shipping a tree nobody has looked at.
+`version.py` picks the "upcoming" week from the current time. The nightly anchors that to the branch
+tip's commit date instead, so the version depends only on the commit and an unmoved branch never
+produces a new package just because a week turned over.
 
 ### How a nightly happens
 
 1. `.github/workflows/nightly.yml` runs at 04:17 UTC (and on demand via **Actions → nightly → Run workflow**).
 2. It calls [`scripts/nightly.sh`](scripts/nightly.sh), which:
-   - rolls the `lemonade` submodule to the tip of `GUI3_merging` (`git submodule update --remote`);
-   - runs `scripts/merge-release.sh` to merge the newest upstream `v*` tag into that tip and regenerate
-     `patches/0100-catch-up-to-release.patch`;
-   - takes `Version:` from the *merged* tree's `project(lemon_cpp VERSION …)` and syncs it into the spec;
-   - verifies every patch in `patches/` still applies, failing loudly if the branch drifted out from under one;
+   - rolls the `lemonade` submodule to the tip of `GUI3_squashed`, with full history;
+   - computes the upstream version with `tools/version.py` and syncs it into the spec;
+   - verifies every patch in `patches/` (if any are ever added) still applies;
    - exits quietly if none of that changed anything;
    - builds a test SRPM as a pre-flight check;
    - runs `tito tag --use-release '0.<date>git<sha>%{?dist}' --accept-auto-changelog`;
    - pushes the commit and the tag to `main`.
 3. Pushing the tag fires the COPR webhook, which rebuilds `clemperorpenguin/lemonade` from this repo.
 
-Note that step 2 runs even when the branch has not moved: upstream tagging a new release changes the
-package on its own, so that alone is a reason to cut a nightly.
-
-Failures show up in two places: merge, patch and spec problems fail the GitHub Actions run, and
+Failures show up in two places: version and spec problems fail the GitHub Actions run, and
 compile problems fail the COPR build. Check both if a night goes missing.
 
 ### Running the nightly by hand
@@ -291,12 +274,6 @@ FORCE=1 PUSH=1 ./scripts/nightly.sh
 
 # Track a different upstream branch for one run
 BRANCH=main ./scripts/nightly.sh
-
-# Merge a specific release instead of the newest v* tag
-RELEASE_TAG=v11.7.0 ./scripts/nightly.sh
-
-# Regenerate just the catch-up patch, without tagging
-./scripts/merge-release.sh
 ```
 
 The script uses `tito` from `$PATH` when present; otherwise it runs tito inside a throwaway Fedora

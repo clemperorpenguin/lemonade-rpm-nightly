@@ -1,4 +1,4 @@
 [submodule "lemonade"]
 	path = lemonade
 	url = https://github.com/lemonade-sdk/lemonade/
-	branch = GUI3_merging
+	branch = GUI3_squashed

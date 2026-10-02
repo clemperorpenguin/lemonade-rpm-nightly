@@ -32,7 +32,7 @@ jobs:
       - name: Install release tooling
         run: >
           dnf -y install --setopt=install_weak_deps=False
-          git tito rpm-build rpmdevtools
+          git python3 tito rpm-build rpmdevtools
 
       - uses: actions/checkout@v4
         with:
