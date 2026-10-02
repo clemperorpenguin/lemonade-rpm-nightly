@@ -1,6 +1,6 @@
 Name:           lemonade
 Version:        2026.41.0
-Release:        0.20260902git1e7ac6bc6%{?dist}
+Release:        0.20261002gitab2f9cd7b%{?dist}
 Summary:        Lightweight, high-performance local LLM server
 License:        Apache-2.0
 URL:            https://lemonade-server.ai/
@@ -443,6 +443,14 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/applications/lemonade-web.desktop
 
 %changelog
+* Fri Oct 02 2026 github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+- nightly: GUI3_squashed @ ab2f9cd7b (2026.41.0~1484.ab2f9cd7)
+  (41898282+github-actions[bot]@users.noreply.github.com)
+- Build GUI3_squashed as-is instead of GUI3_merging + latest release
+  (clem@pendragon.systems)
+- spec: purge the misattributed address from the shipped changelog
+  (clem@pendragon.systems)
+
 * Wed Sep 02 2026 clemperorpenguin <clem@pendragon.systems> 11.9.0-0.20260902git1e7ac6bc6
 - nightly: GUI3_merging @ 1e7ac6bc6 on v11.9.0 (clem@pendragon.systems)
 - Stop attributing automated commits to an unrelated GitHub user
