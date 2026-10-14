@@ -1,6 +1,6 @@
 Name:           lemonade
 Version:        2026.43.0
-Release:        0.20261013git4575477af%{?dist}
+Release:        0.20261014gitf5aa3d935%{?dist}
 Summary:        Lightweight, high-performance local LLM server
 License:        Apache-2.0
 URL:            https://lemonade-server.ai/
@@ -443,6 +443,10 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/lemonade-web.desktop
 %{_datadir}/applications/lemonade-web.desktop
 
 %changelog
+* Wed Oct 14 2026 github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+- nightly: GUI3_squashed @ f5aa3d935 (2026.43.0~1712.f5aa3d93)
+  (41898282+github-actions[bot]@users.noreply.github.com)
+
 * Tue Oct 13 2026 github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
 - nightly: GUI3_squashed @ 4575477af (2026.43.0~1488.4575477a)
   (41898282+github-actions[bot]@users.noreply.github.com)
